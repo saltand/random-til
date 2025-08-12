@@ -24,6 +24,12 @@ if (fs.existsSync(tilDir)) {
       stdio: 'inherit'
     });
     console.log('✅ Repository updated successfully!');
+    // Remove .git folder to allow tracking in main repo
+    const gitDir = path.join(tilDir, '.git');
+    if (fs.existsSync(gitDir)) {
+      fs.rmSync(gitDir, { recursive: true, force: true });
+      console.log('🗑️  Removed .git folder for proper tracking');
+    }
   } catch (error) {
     console.log('⚠️  Failed to update, re-cloning repository...');
     // If update fails, remove and re-clone
@@ -32,6 +38,12 @@ if (fs.existsSync(tilDir)) {
       stdio: 'inherit'
     });
     console.log('✅ Repository cloned successfully!');
+    // Remove .git folder to allow tracking in main repo
+    const gitDir = path.join(tilDir, '.git');
+    if (fs.existsSync(gitDir)) {
+      fs.rmSync(gitDir, { recursive: true, force: true });
+      console.log('🗑️  Removed .git folder for proper tracking');
+    }
   }
 } else {
   // Clone the repository for the first time
@@ -41,6 +53,12 @@ if (fs.existsSync(tilDir)) {
       stdio: 'inherit'
     });
     console.log('✅ Repository cloned successfully!');
+    // Remove .git folder to allow tracking in main repo
+    const gitDir = path.join(tilDir, '.git');
+    if (fs.existsSync(gitDir)) {
+      fs.rmSync(gitDir, { recursive: true, force: true });
+      console.log('🗑️  Removed .git folder for proper tracking');
+    }
   } catch (error) {
     console.error('❌ Error cloning repository:', error);
     process.exit(1);
