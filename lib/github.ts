@@ -9,7 +9,7 @@ export interface TilEntry {
   path: string;
 }
 
-const TIL_REPO_URL = 'https://github.com/jbranchaud/til';
+// const TIL_REPO_URL = 'https://github.com/jbranchaud/til';
 const TIL_DATA_DIR = path.join(process.cwd(), 'data/til');
 
 export async function fetchTilData(): Promise<TilEntry[]> {

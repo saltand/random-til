@@ -1,15 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
-import { highlightCode } from '@/lib/shiki-highlighter'
+import rehypeHighlight from 'rehype-highlight'
 
 interface TilEntry {
   title: string
   category: string
   content: string
   path: string
+  renderedContent?: string
 }
 
 export default function Home() {
@@ -17,6 +18,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true)
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [isSwitching, setIsSwitching] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false)
 
   useEffect(() => {
     // Check localStorage first, then system preference
@@ -38,9 +40,9 @@ export default function Home() {
     document.documentElement.classList.toggle('dark', newTheme)
   }
 
-  const fetchRandomTil = async () => {
+  const fetchRandomTil = useCallback(async (isInitial = false) => {
     // Don't hide current content immediately when switching
-    if (til) {
+    if (!isInitial && til) {
       setIsSwitching(true)
     } else {
       setLoading(true)
@@ -58,10 +60,15 @@ export default function Home() {
       setLoading(false)
       setIsSwitching(false)
     }
-  }
+  }, [til])
 
   useEffect(() => {
-    fetchRandomTil()
+    // Prevent double fetch in StrictMode
+    if (!isInitialized) {
+      setIsInitialized(true)
+      fetchRandomTil(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return (
@@ -77,8 +84,9 @@ export default function Home() {
             </div>
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHighlight]}
               components={{
-                code: ({ node, className, children, ...props }) => {
+                code: ({ className, children, ...props }) => {
                   const match = /language-(\w+)/.exec(className || '')
                   const isInline = !match
 
@@ -90,38 +98,13 @@ export default function Home() {
                     )
                   }
 
-                  // For code blocks, we'll handle them in the pre component
-                  return <code {...props}>{children}</code>
+                  return <code className={className} {...props}>{children}</code>
                 },
-                pre: ({ children, ...props }) => {
-                  const [html, setHtml] = useState<string>('')
-                  const [isLoading, setIsLoading] = useState(true)
-
-                  useEffect(() => {
-                    const codeElement = children as any
-                    if (codeElement?.props?.children) {
-                      const className = codeElement.props.className || ''
-                      const match = /language-(\w+)/.exec(className)
-                      const lang = match ? match[1] : ''
-                      const code = String(codeElement.props.children).replace(/\n$/, '')
-
-                      highlightCode(code, lang, isDarkMode).then(highlighted => {
-                        setHtml(highlighted)
-                        setIsLoading(false)
-                      })
-                    }
-                  }, [children, isDarkMode])
-
-                  if (isLoading) {
-                    return (
-                      <pre className="bg-accent p-4 rounded-lg overflow-x-auto" {...props}>
-                        {children}
-                      </pre>
-                    )
-                  }
-
-                  return <div className="rounded-lg overflow-x-auto shiki-container" dangerouslySetInnerHTML={{ __html: html }} />
-                },
+                pre: ({ children, ...props }) => (
+                  <pre className={`hljs p-4 rounded-lg overflow-x-auto my-4 border ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`} {...props}>
+                    {children}
+                  </pre>
+                ),
                 a: ({ children, ...props }) => (
                   <a className="text-primary hover:opacity-80 underline transition-opacity" {...props}>
                     {children}
@@ -138,7 +121,7 @@ export default function Home() {
 
         <div className="mt-12 flex items-center justify-center gap-4">
           <button
-            onClick={fetchRandomTil}
+            onClick={() => fetchRandomTil(false)}
             disabled={isSwitching}
             className="px-8 py-3 bg-primary hover:opacity-90 disabled:opacity-50 text-primary-foreground font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background shadow-sm">
             {isSwitching ? 'Loading...' : 'Random TIL'}

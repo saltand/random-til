@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
 import { fetchTilData, getRandomTil } from '@/lib/github';
 
-let cachedEntries: any[] = [];
+import { TilEntry } from '@/lib/github';
+
+let cachedEntries: TilEntry[] = [];
 let cacheTime = 0;
 const CACHE_DURATION = 1000 * 60 * 60; // 1 hour cache
 

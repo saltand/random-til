@@ -186,17 +186,30 @@
   @apply w-full mb-4 border-collapse;
 }
 
-.markdown-body th,
-.markdown-body td {
-  @apply border border-gray-700 px-3 py-2;
+.prose-invert .markdown-body th,
+.prose-invert .markdown-body td {
+  @apply border border-gray-600 px-3 py-2;
 }
 
-.markdown-body th {
+.prose:not(.prose-invert) .markdown-body th,
+.prose:not(.prose-invert) .markdown-body td {
+  @apply border border-gray-300 px-3 py-2;
+}
+
+.prose-invert .markdown-body th {
   @apply bg-gray-800 font-semibold;
 }
 
-.markdown-body hr {
-  @apply border-gray-700 my-8;
+.prose:not(.prose-invert) .markdown-body th {
+  @apply bg-gray-100 font-semibold;
+}
+
+.prose-invert .markdown-body hr {
+  @apply border-gray-600 my-8;
+}
+
+.prose:not(.prose-invert) .markdown-body hr {
+  @apply border-gray-300 my-8;
 }
 
 .markdown-body img {
@@ -209,28 +222,127 @@ body {
   font-family: var(--font-sans);
 }
 
-/* Shiki code block styles */
-.shiki-container pre {
-  @apply p-4 rounded-lg my-4 overflow-x-auto;
+/* Override highlight.js default background */
+.hljs {
   background: transparent !important;
 }
 
-.shiki-container code {
-  background: transparent !important;
+/* Ensure code blocks have consistent styling during loading */
+pre code.hljs {
   @apply text-sm;
 }
 
-/* Light theme adjustments */
-:root .shiki-container pre {
-  @apply bg-gray-50 border border-gray-200;
+/* Dark mode syntax highlighting (GitHub Dark theme) */
+.dark .hljs-comment,
+.dark .hljs-quote {
+  color: #8b949e;
 }
 
-/* Dark theme adjustments */
-.dark .shiki-container pre {
-  @apply bg-gray-900 border border-gray-800;
+.dark .hljs-keyword,
+.dark .hljs-selector-tag,
+.dark .hljs-literal,
+.dark .hljs-title,
+.dark .hljs-section,
+.dark .hljs-doctag,
+.dark .hljs-type,
+.dark .hljs-name,
+.dark .hljs-strong {
+  color: #ff7b72;
 }
 
-/* Line numbers if needed */
-.shiki-container .line {
-  @apply inline-block w-full;
+.dark .hljs-string,
+.dark .hljs-number,
+.dark .hljs-selector-id,
+.dark .hljs-selector-class,
+.dark .hljs-regexp,
+.dark .hljs-symbol,
+.dark .hljs-variable,
+.dark .hljs-template-variable,
+.dark .hljs-link,
+.dark .hljs-selector-attr,
+.dark .hljs-selector-pseudo {
+  color: #a5d6ff;
+}
+
+.dark .hljs-built_in,
+.dark .hljs-builtin-name,
+.dark .hljs-bullet,
+.dark .hljs-code,
+.dark .hljs-addition {
+  color: #79c0ff;
+}
+
+.dark .hljs-meta {
+  color: #f0883e;
+}
+
+.dark .hljs-deletion {
+  color: #ffa198;
+}
+
+.dark .hljs-attribute {
+  color: #7ee787;
+}
+
+.dark .hljs-emphasis {
+  font-style: italic;
+}
+
+/* Light mode syntax highlighting (GitHub Light theme) */
+:root:not(.dark) .hljs-comment,
+:root:not(.dark) .hljs-quote {
+  color: #6e7781;
+}
+
+:root:not(.dark) .hljs-keyword,
+:root:not(.dark) .hljs-selector-tag,
+:root:not(.dark) .hljs-literal,
+:root:not(.dark) .hljs-title,
+:root:not(.dark) .hljs-section,
+:root:not(.dark) .hljs-doctag,
+:root:not(.dark) .hljs-type,
+:root:not(.dark) .hljs-name,
+:root:not(.dark) .hljs-strong {
+  color: #cf222e;
+  font-weight: 600;
+}
+
+:root:not(.dark) .hljs-string,
+:root:not(.dark) .hljs-number,
+:root:not(.dark) .hljs-selector-id,
+:root:not(.dark) .hljs-selector-class,
+:root:not(.dark) .hljs-regexp,
+:root:not(.dark) .hljs-symbol,
+:root:not(.dark) .hljs-variable,
+:root:not(.dark) .hljs-template-variable,
+:root:not(.dark) .hljs-link,
+:root:not(.dark) .hljs-selector-attr,
+:root:not(.dark) .hljs-selector-pseudo {
+  color: #0a3069;
+}
+
+:root:not(.dark) .hljs-built_in,
+:root:not(.dark) .hljs-builtin-name,
+:root:not(.dark) .hljs-bullet,
+:root:not(.dark) .hljs-code,
+:root:not(.dark) .hljs-addition {
+  color: #0969da;
+  font-weight: 600;
+}
+
+:root:not(.dark) .hljs-meta {
+  color: #953800;
+  font-weight: 600;
+}
+
+:root:not(.dark) .hljs-deletion {
+  color: #82071e;
+}
+
+:root:not(.dark) .hljs-attribute {
+  color: #116329;
+}
+
+:root:not(.dark) .hljs-emphasis {
+  font-style: italic;
 }
