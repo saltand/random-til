@@ -10,7 +10,7 @@ export interface TilEntry {
 }
 
 // const TIL_REPO_URL = 'https://github.com/jbranchaud/til';
-const TIL_DATA_DIR = path.join(process.cwd(), 'data/til');
+const TIL_DATA_DIR = path.join(process.cwd(), 'public/til');
 
 export async function fetchTilData(): Promise<TilEntry[]> {
   const entries: TilEntry[] = [];

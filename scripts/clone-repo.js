@@ -1,13 +1,13 @@
-const { execSync } = require('child_process');
-const fs = require('fs');
-const path = require('path');
+import { execSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 
-const dataDir = path.join(process.cwd(), 'data');
-const tilDir = path.join(dataDir, 'til');
+const publicDir = path.join(process.cwd(), 'public');
+const tilDir = path.join(publicDir, 'til');
 
-// Create data directory if it doesn't exist
-if (!fs.existsSync(dataDir)) {
-  fs.mkdirSync(dataDir, { recursive: true });
+// Create public directory if it doesn't exist
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir, { recursive: true });
 }
 
 // Check if repository already exists

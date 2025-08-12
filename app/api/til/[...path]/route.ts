@@ -18,7 +18,7 @@ export async function GET(
     const filePath = requestedPath.endsWith('.md') ? requestedPath : `${requestedPath}.md`
     
     // Construct the full path to the TIL file
-    const fullPath = path.join(process.cwd(), 'data', 'til', filePath)
+    const fullPath = path.join(process.cwd(), 'public', 'til', filePath)
     
     // Check if file exists
     if (!fs.existsSync(fullPath)) {

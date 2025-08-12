@@ -42,3 +42,5 @@ next-env.d.ts
 
 # data
 /data/til
+# public til files should be tracked
+!/public/til
