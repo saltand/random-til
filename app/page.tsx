@@ -64,7 +64,7 @@ function HomePage() {
               const randomData = await randomResponse.json()
               setTil(randomData)
               const newPath = randomData.path.replace(/\.md$/, '')
-              router.replace(`/?til=${newPath}`)
+              router.replace(`/?til=${newPath}`, { scroll: false })
             } else {
               setError('TIL not found')
             }
@@ -79,7 +79,7 @@ function HomePage() {
             setTil(data)
             // Update URL without navigation
             const newPath = data.path.replace(/\.md$/, '')
-            router.replace(`/?til=${newPath}`)
+            router.replace(`/?til=${newPath}`, { scroll: false })
           }
         }
       } catch (error) {
@@ -98,7 +98,10 @@ function HomePage() {
       if (response.ok) {
         const data = await response.json()
         const newPath = data.path.replace(/\.md$/, '')
-        router.replace(`/?til=${newPath}`)
+        // 直接更新状态，不触发 useEffect
+        setTil(data)
+        // 使用 window.history.replaceState 更新 URL，完全避免触发路由变化
+        window.history.replaceState({}, '', `/?til=${newPath}`)
       }
     } catch (error) {
       console.error('Failed to fetch random TIL:', error)
@@ -116,51 +119,56 @@ function HomePage() {
   }
 
   return til ? (
-    <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-8 transition-colors duration-300">
-      <div className="w-full max-w-4xl">
-        <article className="prose prose-lg max-w-none markdown-body">
-          <div className="mb-4">
-            <div className="text-sm text-muted-foreground mb-2">{til.category}</div>
-          </div>
-          <ReactMarkdown
-            remarkPlugins={[remarkGfm]}
-            rehypePlugins={[rehypeHighlight]}
-            components={{
-              code: ({ className, children, ...props }) => {
-                const match = /language-(\w+)/.exec(className || '')
-                const isInline = !match
+    <div className="min-h-screen bg-background text-foreground transition-colors duration-300">
+      <div className="pb-24 p-8">
+        <div className="w-full max-w-4xl mx-auto">
+          <article className="prose prose-lg max-w-none markdown-body">
+            <div className="mb-4">
+              <div className="text-sm text-muted-foreground mb-2">{til.category}</div>
+            </div>
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              rehypePlugins={[rehypeHighlight]}
+              components={{
+                code: ({ className, children, ...props }) => {
+                  const match = /language-(\w+)/.exec(className || '')
+                  const isInline = !match
 
-                if (isInline) {
+                  if (isInline) {
+                    return (
+                      <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
+                        {children}
+                      </code>
+                    )
+                  }
+
                   return (
-                    <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
+                    <code className={className} {...props}>
                       {children}
                     </code>
                   )
-                }
-
-                return (
-                  <code className={className} {...props}>
+                },
+                pre: ({ children, ...props }) => (
+                  <pre className={`hljs p-4 rounded-lg overflow-x-auto my-4 border ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`} {...props}>
                     {children}
-                  </code>
-                )
-              },
-              pre: ({ children, ...props }) => (
-                <pre className={`hljs p-4 rounded-lg overflow-x-auto my-4 border ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`} {...props}>
-                  {children}
-                </pre>
-              ),
-              a: ({ children, ...props }) => (
-                <a className="text-primary hover:opacity-80 underline transition-opacity" {...props}>
-                  {children}
-                </a>
-              ),
-              blockquote: ({ children }) => <blockquote className="border-l-4 border-border text-muted-foreground pl-4 italic">{children}</blockquote>,
-            }}>
-            {til.content}
-          </ReactMarkdown>
-        </article>
+                  </pre>
+                ),
+                a: ({ children, ...props }) => (
+                  <a className="text-primary hover:opacity-80 underline transition-opacity" {...props}>
+                    {children}
+                  </a>
+                ),
+                blockquote: ({ children }) => <blockquote className="border-l-4 border-border text-muted-foreground pl-4 italic">{children}</blockquote>,
+              }}>
+              {til.content}
+            </ReactMarkdown>
+          </article>
+        </div>
+      </div>
 
-        <div className="mt-12 flex items-center justify-center gap-4">
+      {/* 固定在底部的按钮栏 */}
+      <div className="fixed bottom-0 left-0 right-0 bg-background/80 backdrop-blur-md border-t border-border">
+        <div className="flex items-center justify-center gap-4 p-4">
           <button
             onClick={fetchRandomTil}
             disabled={randomLoading}
