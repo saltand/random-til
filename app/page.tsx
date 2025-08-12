@@ -100,8 +100,9 @@ function HomePage() {
         const newPath = data.path.replace(/\.md$/, '')
         // 直接更新状态，不触发 useEffect
         setTil(data)
-        // 使用 window.history.replaceState 更新 URL，完全避免触发路由变化
-        window.history.replaceState({}, '', `/?til=${newPath}`)
+        window.history.pushState({}, '', `/?til=${newPath}`)
+        // 平滑滚动到顶部
+        window.scrollTo({ top: 0, behavior: 'smooth' })
       }
     } catch (error) {
       console.error('Failed to fetch random TIL:', error)
