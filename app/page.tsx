@@ -85,7 +85,6 @@ function HomePage() {
       } catch (error) {
         console.error('Failed to fetch TIL:', error)
         setError('Failed to load TIL')
-      } finally {
       }
     }
 
@@ -119,49 +118,47 @@ function HomePage() {
   return til ? (
     <div className="min-h-screen bg-background text-foreground flex flex-col items-center justify-center p-8 transition-colors duration-300">
       <div className="w-full max-w-4xl">
-        {
-          <article className="prose prose-lg max-w-none markdown-body">
-            <div className="mb-4">
-              <div className="text-sm text-muted-foreground mb-2">{til.category}</div>
-            </div>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              rehypePlugins={[rehypeHighlight]}
-              components={{
-                code: ({ className, children, ...props }) => {
-                  const match = /language-(\w+)/.exec(className || '')
-                  const isInline = !match
+        <article className="prose prose-lg max-w-none markdown-body">
+          <div className="mb-4">
+            <div className="text-sm text-muted-foreground mb-2">{til.category}</div>
+          </div>
+          <ReactMarkdown
+            remarkPlugins={[remarkGfm]}
+            rehypePlugins={[rehypeHighlight]}
+            components={{
+              code: ({ className, children, ...props }) => {
+                const match = /language-(\w+)/.exec(className || '')
+                const isInline = !match
 
-                  if (isInline) {
-                    return (
-                      <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
-                        {children}
-                      </code>
-                    )
-                  }
-
+                if (isInline) {
                   return (
-                    <code className={className} {...props}>
+                    <code className="bg-muted px-1 py-0.5 rounded text-sm" {...props}>
                       {children}
                     </code>
                   )
-                },
-                pre: ({ children, ...props }) => (
-                  <pre className={`hljs p-4 rounded-lg overflow-x-auto my-4 border ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`} {...props}>
+                }
+
+                return (
+                  <code className={className} {...props}>
                     {children}
-                  </pre>
-                ),
-                a: ({ children, ...props }) => (
-                  <a className="text-primary hover:opacity-80 underline transition-opacity" {...props}>
-                    {children}
-                  </a>
-                ),
-                blockquote: ({ children }) => <blockquote className="border-l-4 border-border text-muted-foreground pl-4 italic">{children}</blockquote>,
-              }}>
-              {til.content}
-            </ReactMarkdown>
-          </article>
-        }
+                  </code>
+                )
+              },
+              pre: ({ children, ...props }) => (
+                <pre className={`hljs p-4 rounded-lg overflow-x-auto my-4 border ${isDarkMode ? 'bg-gray-900 border-gray-700' : 'bg-gray-50 border-gray-200'}`} {...props}>
+                  {children}
+                </pre>
+              ),
+              a: ({ children, ...props }) => (
+                <a className="text-primary hover:opacity-80 underline transition-opacity" {...props}>
+                  {children}
+                </a>
+              ),
+              blockquote: ({ children }) => <blockquote className="border-l-4 border-border text-muted-foreground pl-4 italic">{children}</blockquote>,
+            }}>
+            {til.content}
+          </ReactMarkdown>
+        </article>
 
         <div className="mt-12 flex items-center justify-center gap-4">
           <button
