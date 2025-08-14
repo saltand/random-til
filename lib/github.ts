@@ -35,7 +35,7 @@ export async function fetchTilData(): Promise<TilEntry[]> {
             
             entries.push({
               title: title.charAt(0).toUpperCase() + title.slice(1),
-              category: dir.charAt(0).toUpperCase() + dir.slice(1),
+              category: dir,
               content: mdContent,
               path: `${dir}/${file}`
             });

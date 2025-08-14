@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import rehypeHighlight from 'rehype-highlight'
@@ -16,11 +16,13 @@ interface TilEntry {
 
 function HomePage() {
   const searchParams = useSearchParams()
-  const router = useRouter()
   const [til, setTil] = useState<TilEntry | null>(null)
   const [randomLoading, setRandomLoading] = useState(false)
   const [isDarkMode, setIsDarkMode] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [allCategories, setAllCategories] = useState<string[]>([])
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([])
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false)
 
   const tilPath = searchParams.get('til')
 
@@ -35,6 +37,32 @@ function HomePage() {
       setIsDarkMode(prefersDark)
       document.documentElement.classList.toggle('dark', prefersDark)
     }
+
+    // Load categories and selected categories from localStorage
+    const loadCategoriesAndFilter = async () => {
+      try {
+        const response = await fetch('/api/til/all')
+        if (response.ok) {
+          const data = await response.json()
+          setAllCategories(data.categories)
+
+          // Load selected categories from localStorage, default to all
+          const savedCategories = localStorage.getItem('selectedCategories')
+          if (savedCategories) {
+            const parsed = JSON.parse(savedCategories)
+            setSelectedCategories(parsed)
+          } else {
+            // Default to all categories selected
+            setSelectedCategories(data.categories)
+            localStorage.setItem('selectedCategories', JSON.stringify(data.categories))
+          }
+        }
+      } catch (error) {
+        console.error('Failed to load categories:', error)
+      }
+    }
+
+    loadCategoriesAndFilter()
   }, [])
 
   const toggleTheme = () => {
@@ -44,57 +72,43 @@ function HomePage() {
     document.documentElement.classList.toggle('dark', newTheme)
   }
 
+  const handleCategoryToggle = (category: string) => {
+    const newSelected = selectedCategories.includes(category) ? selectedCategories.filter(c => c !== category) : [...selectedCategories, category]
+
+    setSelectedCategories(newSelected)
+    localStorage.setItem('selectedCategories', JSON.stringify(newSelected))
+  }
+
+  const handleSelectAll = () => {
+    setSelectedCategories(allCategories)
+    localStorage.setItem('selectedCategories', JSON.stringify(allCategories))
+  }
+
+  const handleDeselectAll = () => {
+    setSelectedCategories([])
+    localStorage.setItem('selectedCategories', JSON.stringify([]))
+  }
+
+  // 点击外部关闭筛选菜单
   useEffect(() => {
-    const fetchTil = async () => {
-      setError(null)
-
-      try {
-        if (tilPath) {
-          // Load specific TIL by path
-          const path = tilPath.endsWith('.md') ? tilPath : `${tilPath}.md`
-          const response = await fetch(`/api/til/${path}`)
-
-          if (response.ok) {
-            const data = await response.json()
-            setTil(data)
-          } else if (response.status === 404) {
-            // If specific TIL not found, fetch a random one
-            const randomResponse = await fetch('/api/til')
-            if (randomResponse.ok) {
-              const randomData = await randomResponse.json()
-              setTil(randomData)
-              const newPath = randomData.path.replace(/\.md$/, '')
-              router.replace(`/?til=${newPath}`, { scroll: false })
-            } else {
-              setError('TIL not found')
-            }
-          } else {
-            setError('Failed to load TIL')
-          }
-        } else {
-          // Load random TIL if no specific path
-          const response = await fetch('/api/til')
-          if (response.ok) {
-            const data = await response.json()
-            setTil(data)
-            // Update URL without navigation
-            const newPath = data.path.replace(/\.md$/, '')
-            router.replace(`/?til=${newPath}`, { scroll: false })
-          }
-        }
-      } catch (error) {
-        console.error('Failed to fetch TIL:', error)
-        setError('Failed to load TIL')
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as Element
+      if (showCategoryFilter && !target.closest('[data-category-filter]')) {
+        setShowCategoryFilter(false)
       }
     }
 
-    fetchTil()
-  }, [tilPath, router])
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [showCategoryFilter])
 
-  const fetchRandomTil = async () => {
+  const fetchRandomTil = useCallback(async () => {
     setRandomLoading(true)
     try {
-      const response = await fetch('/api/til')
+      // Build query string with selected categories
+      const categoriesQuery = selectedCategories.length > 0 && selectedCategories.length < allCategories.length ? `?categories=${selectedCategories.join(',')}` : ''
+
+      const response = await fetch(`/api/til/random${categoriesQuery}`)
       if (response.ok) {
         const data = await response.json()
         const newPath = data.path.replace(/\.md$/, '')
@@ -103,13 +117,60 @@ function HomePage() {
         window.history.pushState({}, '', `/?til=${newPath}`)
         // 平滑滚动到顶部
         window.scrollTo({ top: 0, behavior: 'smooth' })
+      } else {
+        setError('No TIL found for selected categories')
       }
     } catch (error) {
       console.error('Failed to fetch random TIL:', error)
+      setError('Failed to fetch random TIL')
     } finally {
       setRandomLoading(false)
     }
-  }
+  }, [selectedCategories, allCategories])
+
+  // 获取初始 TIL 的函数
+  const fetchInitialTil = useCallback(async () => {
+    setError(null)
+
+    try {
+      if (tilPath) {
+        // Load specific TIL by path
+        const path = tilPath.endsWith('.md') ? tilPath : `${tilPath}.md`
+        const response = await fetch(`/api/til/${path}`)
+
+        if (response.ok) {
+          const data = await response.json()
+          setTil(data)
+        } else if (response.status === 404) {
+          // If specific TIL not found, fetch a random one with current filters
+          await fetchRandomTil()
+        } else {
+          setError('Failed to load TIL')
+        }
+      } else {
+        // Load random TIL if no specific path, use current category filters
+        await fetchRandomTil()
+      }
+    } catch (error) {
+      console.error('Failed to fetch TIL:', error)
+      setError('Failed to load TIL')
+    }
+  }, [tilPath, fetchRandomTil])
+
+  // 当 URL 路径变化时获取 TIL
+  useEffect(() => {
+    if (selectedCategories.length > 0) {
+      // 只有在类别加载完成后才获取
+      fetchInitialTil()
+    }
+  }, [tilPath, selectedCategories, fetchInitialTil])
+
+  // 当类别首次加载完成且没有指定路径时，获取随机 TIL
+  useEffect(() => {
+    if (selectedCategories.length > 0 && !tilPath && !til) {
+      fetchRandomTil()
+    }
+  }, [selectedCategories, tilPath, til, fetchRandomTil])
 
   if (error) {
     return (
@@ -123,7 +184,7 @@ function HomePage() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="pb-24 p-8">
         <div className="w-full max-w-4xl mx-auto">
-          <article className="prose prose-lg max-w-none markdown-body">
+          <article className="prose prose-lg max-w-none markdown-body main-content">
             <div className="mb-4">
               <div className="text-sm text-muted-foreground mb-2">{til.category}</div>
             </div>
@@ -186,6 +247,52 @@ function HomePage() {
               </svg>
             )}
           </button>
+
+          {/* 类别筛选按钮 */}
+          <div className="relative" data-category-filter>
+            <button
+              onClick={() => setShowCategoryFilter(!showCategoryFilter)}
+              className="p-3 rounded-lg bg-secondary hover:opacity-90 text-secondary-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 focus:ring-offset-background shadow-sm inline-flex items-center"
+              aria-label="Category Filter">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"
+                />
+              </svg>
+            </button>
+
+            {/* 筛选下拉菜单 */}
+            {showCategoryFilter && (
+              <div className="absolute bottom-full mb-2 right-0 bg-background border border-border rounded-lg shadow-lg p-4 min-w-[280px] max-h-[400px] overflow-y-auto category-filter-dropdown">
+                <div className="flex gap-2 mb-4">
+                  <button onClick={handleSelectAll} className="px-3 py-1.5 text-xs bg-primary text-primary-foreground rounded hover:opacity-90">
+                    Select All
+                  </button>
+                  <button onClick={handleDeselectAll} className="px-3 py-1.5 text-xs bg-secondary text-secondary-foreground rounded hover:opacity-90">
+                    Deselect All
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {allCategories.map(category => (
+                    <label key={category} className="flex items-center space-x-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={selectedCategories.includes(category)}
+                        onChange={() => handleCategoryToggle(category)}
+                        className="rounded border-border text-primary focus:ring-primary focus:ring-offset-background"
+                      />
+                      <span className="text-sm">{category}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
           {til && (
             <a
               href={`https://github.com/jbranchaud/til/blob/master/${til.path}`}
