@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
@@ -23,7 +23,8 @@ function HomePage() {
   const [allCategories, setAllCategories] = useState<string[]>([])
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [showCategoryFilter, setShowCategoryFilter] = useState(false)
-
+  
+  const hasInitialized = useRef(false)
   const tilPath = searchParams.get('til')
 
   useEffect(() => {
@@ -128,13 +129,13 @@ function HomePage() {
     }
   }, [selectedCategories, allCategories])
 
-  // 获取初始 TIL 的函数
-  const fetchInitialTil = useCallback(async () => {
-    setError(null)
+  // 处理特定路径的 TIL 加载
+  useEffect(() => {
+    if (!tilPath || selectedCategories.length === 0) return
 
-    try {
-      if (tilPath) {
-        // Load specific TIL by path
+    const loadSpecificTil = async () => {
+      setError(null)
+      try {
         const path = tilPath.endsWith('.md') ? tilPath : `${tilPath}.md`
         const response = await fetch(`/api/til/${path}`)
 
@@ -142,35 +143,26 @@ function HomePage() {
           const data = await response.json()
           setTil(data)
         } else if (response.status === 404) {
-          // If specific TIL not found, fetch a random one with current filters
           await fetchRandomTil()
         } else {
           setError('Failed to load TIL')
         }
-      } else {
-        // Load random TIL if no specific path, use current category filters
-        await fetchRandomTil()
+      } catch (error) {
+        console.error('Failed to fetch TIL:', error)
+        setError('Failed to load TIL')
       }
-    } catch (error) {
-      console.error('Failed to fetch TIL:', error)
-      setError('Failed to load TIL')
     }
-  }, [tilPath, fetchRandomTil])
 
-  // 当 URL 路径变化时获取 TIL
-  useEffect(() => {
-    if (selectedCategories.length > 0) {
-      // 只有在类别加载完成后才获取
-      fetchInitialTil()
-    }
-  }, [tilPath, selectedCategories, fetchInitialTil])
+    loadSpecificTil()
+  }, [tilPath, selectedCategories, fetchRandomTil])
 
-  // 当类别首次加载完成且没有指定路径时，获取随机 TIL
+  // 处理无路径时的随机 TIL 加载（只在初始化时）
   useEffect(() => {
-    if (selectedCategories.length > 0 && !tilPath && !til) {
+    if (!tilPath && selectedCategories.length > 0 && !til && !hasInitialized.current) {
+      hasInitialized.current = true
       fetchRandomTil()
     }
-  }, [selectedCategories, tilPath, til, fetchRandomTil])
+  }, [tilPath, selectedCategories, til, fetchRandomTil])
 
   if (error) {
     return (
